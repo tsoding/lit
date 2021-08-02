@@ -14,7 +14,7 @@
 
 void usage(FILE *stream)
 {
-    fprintf(stream, "Usage: lit [OPTIONS] <INPUT-FILE>\n");
+    fprintf(stream, "Usage: lit [OPTIONS] [--] <INPUT-FILE>\n");
     fprintf(stream, "OPTIONS:\n");
     flag_print_options(stream);
 }
