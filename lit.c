@@ -630,7 +630,7 @@ error:
     mf_unmap(mf);
     return false;
 }
-// mf.c end /////////////////////////////////////////
+// mf.c end ////////////////////////////////
 
 #include <stdio.h>
 #include <stdlib.h>
