@@ -673,6 +673,7 @@ int main(int argc, char **argv)
     char **begin = flag_str("begin", "\\begin{code}", "Line that denotes the beginning of the code block in the markup language.");
     char **end = flag_str("end", "\\end{code}", "Line that denotes the end of the code block in the markup language.");
     char **comment = flag_str("comment", "//", "The inline comment of the programming language.");
+    char **output = flag_str("o", NULL, "Output file path. If not provided, output to stdout.");
 
     if (!flag_parse(argc, argv)) {
         usage(stderr);
@@ -710,10 +711,21 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // TODO: output directly to a file without the need to redirect anything
-
     String_View content = sv_from_parts(mf.content_data, mf.content_size);
-    markup_to_program(content, stdout, *begin, *end, *comment);
+    FILE *stream = stdout;
+    if (*output) {
+        stream = fopen(*output, "wb");
+        if (stream == NULL) {
+            fprintf(stderr, "ERROR: could not open file %s: %s\n", *output, strerror(errno));
+            exit(1);
+        }
+    }
+
+    markup_to_program(content, stream, *begin, *end, *comment);
+
+    if (*output) {
+        fclose(stream);
+    }
 
     mf_unmap(&mf);
 
