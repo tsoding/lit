@@ -14,7 +14,7 @@
 
 void usage(FILE *stream)
 {
-    fprintf(stream, "Usage: lit [OPTIONS]\n");
+    fprintf(stream, "Usage: lit [OPTIONS] <INPUT-FILE>\n");
     fprintf(stream, "OPTIONS:\n");
     flag_print_options(stream);
 }
@@ -54,7 +54,6 @@ void program_to_markup(String_View content, FILE *stream, char *begin, char *end
 int main(int argc, char **argv)
 {
     bool *help = flag_bool("help", false, "Print this help to stdout and exit with 0");
-    char **input = flag_str("input", NULL, "Path to the input file");
     char **begin = flag_str("begin", "\\begin{code}", "Line that denotes the beginning of the code block in the markup language");
     char **end = flag_str("end", "\\end{code}", "Line that denotes the end of the code block in the markup language");
     char **comment = flag_str("comment", "//", "The inline comment of the programming language");
@@ -71,13 +70,22 @@ int main(int argc, char **argv)
         exit(0);
     }
 
-    if (*input == NULL) {
+    int rest_argc = flag_rest_argc();
+    char **rest_argv = flag_rest_argv();
+
+    if (rest_argc <= 0) {
         usage(stderr);
-        fprintf(stderr, "ERROR: No -input is provided\n");
+        fprintf(stderr, "ERROR: no input file was provided\n");
         exit(1);
     }
 
-    const char *input_file_path = *input;
+    if (rest_argc > 1) {
+        usage(stderr);
+        fprintf(stderr, "ERROR: only one input file is supported right now\n");
+        exit(1);
+    }
+
+    const char *input_file_path = rest_argv[0];
 
     Mapped_File mf = {0};
 
@@ -87,6 +95,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    // TODO: output directly to a file without the need to redirect anything
 
     String_View content = sv_from_parts(mf.content_data, mf.content_size);
     if (strcmp(*mode, "m2p") == 0) {
