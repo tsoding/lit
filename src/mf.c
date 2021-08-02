@@ -5,7 +5,7 @@
 #include <sys/mman.h>
 
 #ifdef _WIN32
-#error "Mapped_File API is not implemented for Windows"
+#error "TODO: Mapped_File API is not implemented for Windows"
 #endif
 
 typedef struct {

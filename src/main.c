@@ -48,7 +48,7 @@ void program_to_markup(String_View content, FILE *stream, char *begin, char *end
     (void) begin;
     (void) end;
     (void) comment;
-    assert(0 && "not implemented");
+    assert(0 && "TODO: implement program_to_markup mode");
 }
 
 int main(int argc, char **argv)
