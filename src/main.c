@@ -4,70 +4,51 @@
 #include <string.h>
 #include <errno.h>
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/mman.h>
-
 #define SV_IMPLEMENTATION
 #include "./sv.h"
 
 #define FLAG_IMPLEMENTATION
 #include "./flag.h"
 
-typedef struct {
-    void *content_data;
-    size_t content_size;
-
-    int fd;
-    bool fd_open;
-} Mapped_File;
-
-void unmap_file(Mapped_File *mf)
-{
-    if (mf->content_data != NULL) {
-        munmap(mf->content_data, mf->content_size);
-    }
-
-    if (mf->fd_open) {
-        close(mf->fd);
-    }
-
-    memset(mf, 0, sizeof(*mf));
-}
-
-bool map_file(Mapped_File *mf, const char *file_path)
-{
-    unmap_file(mf);
-
-    mf->fd = open(file_path, O_RDONLY);
-    if (mf->fd < 0) {
-        goto error;
-    }
-    mf->fd_open = true;
-
-    struct stat statbuf = {0};
-    if (fstat(mf->fd, &statbuf) < 0) {
-        goto error;
-    }
-
-    mf->content_size = statbuf.st_size;
-    mf->content_data = mmap(NULL, mf->content_size, PROT_READ, MAP_PRIVATE, mf->fd, 0);
-    if (mf->content_data == NULL) {
-        goto error;
-    }
-
-    return true;
-error:
-    unmap_file(mf);
-    return false;
-}
+#include "./mf.c"
 
 void usage(FILE *stream)
 {
     fprintf(stream, "Usage: lit [OPTIONS]\n");
+    fprintf(stream, "OPTIONS:\n");
     flag_print_options(stream);
+}
+
+void markup_to_program(String_View content, FILE *stream, char *begin, char *end, char *comment)
+{
+    bool code_mode = false;
+    while (content.count > 0) {
+        String_View line = sv_chop_by_delim(&content, '\n');
+
+        if (code_mode) {
+            if (sv_eq(sv_trim(line), sv_from_cstr(end))) {
+                fprintf(stream, "%s " SV_Fmt"\n", comment, SV_Arg(line));
+                code_mode = false;
+            } else {
+                fprintf(stream, SV_Fmt"\n", SV_Arg(line));
+            }
+        } else {
+            fprintf(stream, "%s " SV_Fmt"\n", comment, SV_Arg(line));
+            if (sv_eq(sv_trim(line), sv_from_cstr(begin))) {
+                code_mode = true;
+            }
+        }
+    }
+}
+
+void program_to_markup(String_View content, FILE *stream, char *begin, char *end, char *comment)
+{
+    (void) content;
+    (void) stream;
+    (void) begin;
+    (void) end;
+    (void) comment;
+    assert(0 && "not implemented");
 }
 
 int main(int argc, char **argv)
@@ -77,6 +58,7 @@ int main(int argc, char **argv)
     char **begin = flag_str("begin", "\\begin{code}", "Line that denotes the beginning of the code block in the markup language");
     char **end = flag_str("end", "\\end{code}", "Line that denotes the end of the code block in the markup language");
     char **comment = flag_str("comment", "//", "The inline comment of the programming language");
+    char **mode = flag_str("mode", "m2p", "Conversion mode. m2p -- markup to program. p2m -- program to markup");
 
     if (!flag_parse(argc, argv)) {
         usage(stderr);
@@ -91,7 +73,7 @@ int main(int argc, char **argv)
 
     if (*input == NULL) {
         usage(stderr);
-        fprintf(stderr, "ERROR: No input file is provided\n");
+        fprintf(stderr, "ERROR: No -input is provided\n");
         exit(1);
     }
 
@@ -99,34 +81,25 @@ int main(int argc, char **argv)
 
     Mapped_File mf = {0};
 
-    if (!map_file(&mf, input_file_path)) {
+    if (!mf_map(&mf, input_file_path)) {
         fprintf(stderr, "ERROR: could not read file %s: %s\n",
                 input_file_path, strerror(errno));
         exit(1);
     }
 
-    bool code_mode = false;
 
     String_View content = sv_from_parts(mf.content_data, mf.content_size);
-    while (content.count > 0) {
-        String_View line = sv_chop_by_delim(&content, '\n');
-
-        if (code_mode) {
-            if (sv_eq(sv_trim(line), sv_from_cstr(*end))) {
-                printf("%s " SV_Fmt"\n", *comment, SV_Arg(line));
-                code_mode = false;
-            } else {
-                printf(SV_Fmt"\n", SV_Arg(line));
-            }
-        } else {
-            printf("%s " SV_Fmt"\n", *comment, SV_Arg(line));
-            if (sv_eq(sv_trim(line), sv_from_cstr(*begin))) {
-                code_mode = true;
-            }
-        }
+    if (strcmp(*mode, "m2p") == 0) {
+        markup_to_program(content, stdout, *begin, *end, *comment);
+    } else if (strcmp(*mode, "p2m") == 0) {
+        program_to_markup(content, stdout, *begin, *end, *comment);
+    } else {
+        usage(stderr);
+        fprintf(stderr, "ERROR: unknown mode %s\n", *mode);
+        exit(1);
     }
 
-    unmap_file(&mf);
+    mf_unmap(&mf);
 
     return 0;
 }
