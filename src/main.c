@@ -53,11 +53,11 @@ void program_to_markup(String_View content, FILE *stream, char *begin, char *end
 
 int main(int argc, char **argv)
 {
-    bool *help = flag_bool("help", false, "Print this help to stdout and exit with 0");
-    char **begin = flag_str("begin", "\\begin{code}", "Line that denotes the beginning of the code block in the markup language");
-    char **end = flag_str("end", "\\end{code}", "Line that denotes the end of the code block in the markup language");
-    char **comment = flag_str("comment", "//", "The inline comment of the programming language");
-    char **mode = flag_str("mode", "m2p", "Conversion mode. m2p -- markup to program. p2m -- program to markup");
+    bool *help = flag_bool("help", false, "Print this help to stdout and exit with 0.");
+    char **begin = flag_str("begin", "\\begin{code}", "Line that denotes the beginning of the code block in the markup language.");
+    char **end = flag_str("end", "\\end{code}", "Line that denotes the end of the code block in the markup language.");
+    char **comment = flag_str("comment", "//", "The inline comment of the programming language.");
+    char **mode = flag_str("mode", "m2p", "Conversion mode. m2p -- markup to program. p2m -- program to markup.");
 
     if (!flag_parse(argc, argv)) {
         usage(stderr);
