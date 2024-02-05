@@ -621,7 +621,7 @@ bool mf_map(Mapped_File *mf, const char *file_path)
 
     mf->content_size = statbuf.st_size;
     mf->content_data = mmap(NULL, mf->content_size, PROT_READ, MAP_PRIVATE, mf->fd, 0);
-    if (mf->content_data == NULL) {
+    if (mf->content_data == MAP_FAILED) {
         goto error;
     }
 
